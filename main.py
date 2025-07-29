@@ -2,9 +2,19 @@ import cv2 #cv2 collaborates with numpy library
 import time
 from emailing import send_email
 import glob
+import os
+from threading import Thread
 
 video = cv2.VideoCapture(0)  # 0 because I only have 1 (main) camera in my laptop
 time.sleep(1)  # code waits 1 sec
+
+def clean_folder():
+    print("clean_folder function started")
+    images = glob.glob("images/*.png")
+    for image in images:
+        os.remove(image)
+    print("clean_folder function finished")
+
 
 
 first_frame = None
@@ -56,7 +66,14 @@ while True:
     status_list = status_list[-2:]
 
     if status_list[0] == 1 and status_list[1] == 0:
-        send_email(image_with_object)
+        email_thread = Thread(target=send_email, args=(image_with_object, ))
+        # end_email(image_with_object), we don't do it, we use a thread
+        email_thread.daemon = True
+        clean_thread = Thread(target=clean_folder)
+        email_thread.daemon = True
+
+        # Now, call the threads
+        email_thread.start()
 
         cv2.imshow("Video", frame)
 
@@ -66,3 +83,4 @@ while True:
         break
 
 video.release()
+clean_thread.start()
